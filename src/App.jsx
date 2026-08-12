@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 
 // Lightweight Native Web Audio API sound engine for UI feedback & diagram sonification
 class SoundEngine {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.lastClickAt = 0;
   }
 
   init() {
@@ -21,6 +23,9 @@ class SoundEngine {
 
   playNodeClick(freq = 580) {
     if (this.muted) return;
+    const now = Date.now();
+    if (now - this.lastClickAt < 60) return;
+    this.lastClickAt = now;
     this.init();
     if (!this.ctx) return;
     try {
@@ -193,7 +198,7 @@ const MirrorShineText = ({ children }) => (
 );
 
 const RESUME_URL = "https://github.com/sohamkadam";
-const SOHAM_EMAIL = "sohamkadam07@gmail.com";
+const SOHAM_EMAIL = "sohamsk0015@gmail.com";
 const GITHUB_URL = "https://github.com/sohamkadam01";
 const LINKEDIN_URL = "https://www.linkedin.com/in/kadamsoham0015/";
 
@@ -516,6 +521,26 @@ const PROOF_HIGHLIGHTS = [
 
 const CERTIFICATIONS_DATA = [
   {
+    id: 'cert-java',
+    title: 'Java Certification',
+    issuer: 'Programming Certification',
+    year: '2026',
+    verifyUrl: 'https://drive.google.com/file/d/1pqDsjvpGHcbmc83yFgVAvNGPMPIZhl4a/view?usp=sharing',
+    category: 'CERTIFICATIONS',
+    whyItMatters: 'Validates my foundation in Java programming and object-oriented software development.',
+    skills: ['Java', 'OOP', 'Data Structures', 'Core Java'],
+  },
+  {
+    id: 'cert-python',
+    title: 'Python Certification',
+    issuer: 'Programming Certification',
+    year: '2026',
+    verifyUrl: 'https://drive.google.com/file/d/1ZayaoM0POMNOb4DQfGWMmQZYkuzsMmZP/view?usp=sharing',
+    category: 'CERTIFICATIONS',
+    whyItMatters: 'Validates my Python programming foundation for automation, data work, and AI-focused development.',
+    skills: ['Python', 'Problem Solving', 'Automation', 'Data Handling'],
+  },
+  {
     id: 'cert-agentic-ai',
     title: 'Agentic AI Certified Foundations Associate',
     issuer: 'Oracle',
@@ -701,6 +726,7 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
   const speed = 4000;
   const containerRef = useRef(null);
   const workflowViewportRef = useRef(null);
+  const dragStateRef = useRef(null);
 
   const totalSteps = diagramData.nodes.length;
   const maxNodeX = Math.max(900, ...diagramData.nodes.map((node) => node.x));
@@ -765,13 +791,34 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
     setActiveStep(index);
   };
 
+  const handleDiagramPointerDown = (event) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    const viewport = workflowViewportRef.current;
+    if (!viewport) return;
+    dragStateRef.current = { pointerId: event.pointerId, startX: event.clientX, startScrollLeft: viewport.scrollLeft };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleDiagramPointerMove = (event) => {
+    const dragState = dragStateRef.current;
+    const viewport = workflowViewportRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId || !viewport) return;
+    viewport.scrollLeft = dragState.startScrollLeft - (event.clientX - dragState.startX);
+  };
+
+  const stopDiagramDrag = (event) => {
+    if (dragStateRef.current?.pointerId === event.pointerId) dragStateRef.current = null;
+  };
+
   const computeNodeLeft = (node, index) => {
     const baseLeft = (node.x / maxNodeX) * 90 + 4;
     const shiftLeft = (index - activeStep) * 10;
     return baseLeft + shiftLeft;
   };
 
-  const computeNodeTop = (node) => (node.y / 280) * 80 + 10;
+  // Keep nodes within the center of the canvas so the connected explainer card
+  // always has space above or below it.
+  const computeNodeTop = (node) => (node.y / 280) * 55 + 22;
 
   const nodeMap = diagramData.nodes.reduce((acc, node) => {
     acc[node.id] = node;
@@ -782,8 +829,8 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
   const activeNodeLeft = activeNode ? computeNodeLeft(activeNode, activeStep) : 50;
   const activeNodeTop = activeNode ? computeNodeTop(activeNode) : 50;
   const calloutLeft = Math.max(14, Math.min(86, activeNodeLeft));
-  const calloutAbove = activeNodeTop >= 48;
-  const calloutTop = calloutAbove ? activeNodeTop - 14 : activeNodeTop + 14;
+  const calloutAbove = activeNodeTop >= 51;
+  const calloutTop = calloutAbove ? activeNodeTop - 12 : activeNodeTop + 12;
 
   useEffect(() => {
     const viewport = workflowViewportRef.current;
@@ -814,23 +861,33 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsExpanded((prev) => !prev)}
-          className="self-start sm:self-auto inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-slate-200 transition hover:border-indigo-400/80 hover:text-white"
-        >
-          {isExpanded ? 'Collapse' : 'Expand'} Diagram
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="self-start sm:self-auto inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-slate-200 transition hover:border-indigo-400/80 hover:text-white"
+          >
+            {isExpanded ? 'Collapse' : 'Expand'} Diagram
+          </button>
+        </div>
       </div>
 
-      <div ref={workflowViewportRef} className="workflow-scroll w-full overflow-x-auto overflow-y-hidden rounded-lg bg-slate-950/60">
+      <div
+        ref={workflowViewportRef}
+        onPointerDown={handleDiagramPointerDown}
+        onPointerMove={handleDiagramPointerMove}
+        onPointerUp={stopDiagramDrag}
+        onPointerCancel={stopDiagramDrag}
+        className="workflow-scroll w-full cursor-grab overflow-x-auto overflow-y-hidden rounded-lg bg-slate-950/60 active:cursor-grabbing"
+      >
         <div
-          className="relative w-full bg-slate-950/60 select-none"
+          className="flow-diagram-canvas relative w-full bg-slate-950/60 select-none"
           style={{ minWidth: isExpanded ? '2200px' : '1600px', height: isExpanded ? '46rem' : '36rem' }}
         >
+        <div className="flow-diagram-ambient pointer-events-none absolute inset-0" />
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
           <defs>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <filter id={`${diagramData.id}-glow`} x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
@@ -868,7 +925,7 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
                   <circle
                     r="4"
                     fill="#60a5fa"
-                    filter="url(#glow)"
+                    filter={`url(#${diagramData.id}-glow)`}
                   >
                     <animate
                       attributeName="cx"
@@ -898,7 +955,8 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
               stroke="#38bdf8"
               strokeWidth="2"
               strokeDasharray="4 4"
-              className="animate-[dash_1s_linear_infinite]"
+              filter={`url(#${diagramData.id}-glow)`}
+              className="animate-[dash_1s_linear_infinite] opacity-90"
             />
           )}
         </svg>
@@ -919,7 +977,7 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
                 }}
                 className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 z-10 min-w-[130px] max-w-[175px] p-3 rounded-lg border text-center ${
                   isActive
-                    ? 'scale-110 bg-indigo-950/90 border-indigo-400 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/50'
+                    ? 'flow-active-node scale-110 bg-indigo-950/90 border-indigo-300 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/50'
                     : isProcessed
                     ? 'bg-slate-900/90 border-slate-700 text-slate-300 opacity-90'
                     : 'bg-slate-950/80 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
@@ -948,18 +1006,14 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
             );
           })}
         </div>
-
         <div
-          className={`absolute z-20 w-[18rem] max-w-[calc(100%-2rem)] -translate-x-1/2 transition-[left,top] duration-700 ease-in-out ${calloutAbove ? '-translate-y-full' : ''}`}
+          className={`absolute z-20 w-[18rem] max-w-[calc(100%-2rem)] -translate-x-1/2 transition-[left,top] duration-500 ease-out ${calloutAbove ? '-translate-y-full' : ''}`}
           style={{ left: `${calloutLeft}%`, top: `${calloutTop}%` }}
           aria-live="polite"
         >
-          <div
-            key={activeNode?.id}
-            className="animate-[hero-reveal_300ms_ease-out] relative rounded-xl border border-sky-400/40 bg-slate-950/95 px-4 py-3 shadow-2xl shadow-indigo-950/70 backdrop-blur-sm sm:px-5"
-          >
+          <div key={activeNode?.id} className="flow-explainer-glow animate-[hero-reveal_300ms_ease-out] rounded-xl border border-sky-400/50 bg-slate-950/95 px-4 py-3 shadow-2xl shadow-indigo-950/70 backdrop-blur-sm sm:px-5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">Active component</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">Flow explainer</span>
               <span className="text-[10px] uppercase tracking-wider text-slate-500">{activeNode?.type}</span>
             </div>
             <p className="mt-1 text-sm font-semibold text-white">{activeNode?.label}</p>
@@ -1004,6 +1058,12 @@ export default function App() {
     );
     revealItems.forEach((item) => observer.observe(item));
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const playClickSound = () => audioFX.playNodeClick();
+    document.addEventListener('click', playClickSound, true);
+    return () => document.removeEventListener('click', playClickSound, true);
   }, []);
 
   const toggleSound = () => {
@@ -1175,6 +1235,13 @@ export default function App() {
                 className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700/80 font-medium text-xs transition-all"
               >
                 Java Projects
+              </a>
+              <a
+                href="#analysis-work"
+                onClick={() => audioFX.playNodeClick(400)}
+                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700/80 font-medium text-xs transition-all"
+              >
+                Analysis Projects
               </a>
             </div>
           </div>
@@ -1726,15 +1793,16 @@ export default function App() {
       </section>
 
       {/* TECHNICAL TOOLKIT */}
-      <section id="stack" className="scroll-reveal max-w-6xl mx-auto px-6 py-16 border-t border-slate-800/60">
-        <div className="mb-10">
+      <section id="stack" className="toolkit-section scroll-reveal max-w-6xl mx-auto px-6 py-16 border-t border-slate-800/60">
+        <div className="toolkit-heading mb-10">
           <span className="text-xs font-mono text-indigo-400 tracking-wider uppercase font-semibold">
             04 / STACK &amp; CAPABILITIES
           </span>
           <h2 className="text-3xl font-bold text-white mt-1">Technical Toolkit</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">A practical stack for building responsive interfaces, reliable backend services, and intelligent AI-driven systems.</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 font-mono text-xs sm:grid-cols-2 xl:grid-cols-4">
+        <div className="toolkit-grid grid grid-cols-1 gap-4 font-mono text-xs sm:grid-cols-2 xl:grid-cols-4">
 
     {/* Languages */}
     <div className="min-w-0 p-5 rounded-xl bg-slate-900/50 border border-slate-800 space-y-3">
@@ -1915,8 +1983,8 @@ export default function App() {
       </section>
 
       {/* ABOUT & EXPERIENCE */}
-    <section id="about" className="scroll-reveal max-w-6xl mx-auto px-6 py-16 border-t border-slate-800/60">
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+    <section id="about" className="mindset-section scroll-reveal max-w-6xl mx-auto px-6 py-16 border-t border-slate-800/60">
+  <div className="mindset-panel grid grid-cols-1 lg:grid-cols-12 gap-12">
 
     <div className="lg:col-span-6 space-y-6">
       <div>
@@ -1942,7 +2010,7 @@ export default function App() {
         to build practical, intelligent software.
       </p>
 
-      <div className="grid grid-cols-3 gap-3 pt-2">
+      <div className="mindset-principles grid grid-cols-3 gap-3 pt-2">
         <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
           <span className="block font-mono text-indigo-400 font-bold text-xs">
             BUILD
@@ -2243,6 +2311,7 @@ export default function App() {
         </div>
       )}
 
+      <Analytics />
     </div>
   );
 }
