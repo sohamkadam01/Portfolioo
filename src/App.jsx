@@ -721,7 +721,7 @@ const JOURNEY_MILESTONES = [
 
 const AnimatedFlowDiagram = ({ diagramData }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const speed = 4000;
   const containerRef = useRef(null);
@@ -741,7 +741,7 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
           setIsPlaying(entry.isIntersecting);
         });
       },
-      { threshold: 0.25 }
+      { threshold: 0, rootMargin: '160px 0px' }
     );
 
     observer.observe(targetEl);
