@@ -289,10 +289,6 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .flow-diagram-ambient,
-  .flow-active-node,
-  .flow-active-node::after,
-  .flow-explainer-glow,
   .toolkit-grid > div,
   .toolkit-grid > div:hover::before,
   .toolkit-grid > div h3::before,

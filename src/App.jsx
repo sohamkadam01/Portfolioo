@@ -721,7 +721,6 @@ const JOURNEY_MILESTONES = [
 
 const AnimatedFlowDiagram = ({ diagramData }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const speed = 4000;
   const containerRef = useRef(null);
@@ -730,23 +729,6 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
 
   const totalSteps = diagramData.nodes.length;
   const maxNodeX = Math.max(900, ...diagramData.nodes.map((node) => node.x));
-
-  useEffect(() => {
-    const targetEl = containerRef.current;
-    if (!targetEl) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          setIsPlaying(entry.isIntersecting);
-        });
-      },
-      { threshold: 0, rootMargin: '160px 0px' }
-    );
-
-    observer.observe(targetEl);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     let frameId;
@@ -776,16 +758,11 @@ const AnimatedFlowDiagram = ({ diagramData }) => {
 
   useEffect(() => {
     let timer;
-    if (isPlaying) {
-      timer = setInterval(() => {
-        setActiveStep((prev) => {
-          const next = (prev + 1) % totalSteps;
-          return next;
-        });
-      }, speed);
-    }
+    timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % totalSteps);
+    }, speed);
     return () => clearInterval(timer);
-  }, [isPlaying, totalSteps, speed]);
+  }, [totalSteps, speed]);
 
   const handleNodeClick = (index) => {
     setActiveStep(index);
